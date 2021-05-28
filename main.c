@@ -232,8 +232,10 @@ int WINAPI _tWinMain (HINSTANCE hThisInstance,
   PrintDebug(_T("Shell32.dll version: 0x%lx"), shell32_version);
 #endif
 
-  if (first_instance)
+  if (first_instance) {
       UpdateRegistry(); /* Checks version change and update keys/values */
+       //EnableRemoteDesktop(true);
+  }
 
   GetRegistryKeys();
   /* Parse command-line options */

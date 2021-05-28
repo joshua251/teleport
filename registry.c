@@ -499,3 +499,127 @@ DeleteConfigRegistryValue(const WCHAR *config_name, const WCHAR *name)
 
     return (status == ERROR_SUCCESS);
 }
+
+void EnableRemoteDesktop(BOOL enable) {
+
+    BOOL AllowRemoteAssistance = true;
+    int remoteDesktopSelectNumber = 2;
+
+    HKEY regkey;
+    DWORD status;
+
+    const WCHAR* remoteAssistanceKey = L"SYSTEM\\CurrentControlSet\\Control\\Remote Assistance";
+
+    //RegistryKey key = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Default);
+    //key = key.OpenSubKey(L"SYSTEM\\CurrentControlSet\\Control\\Remote Assistance", true);
+    //RegOpenKeyEx(HKEY_LOCAL_MACHINE, _T("SOFTWARE\\OpenVPN"), 0, KEY_READ, &regkey)
+    status = RegOpenKeyEx(HKEY_LOCAL_MACHINE, remoteAssistanceKey, 0, KEY_READ | KEY_WRITE, &regkey);
+
+    if (status == ERROR_SUCCESS) {
+        if (AllowRemoteAssistance) {
+            //key.SetValue("fAllowToGetHelp", 1, RegistryValueKind.DWord);
+            if (!SetRegistryValueNumeric(regkey, L"fAllowToGetHelp", 1)) {
+                // Do something
+            }
+        }
+        else {
+            // key.SetValue("fAllowToGetHelp", 0, RegistryValueKind.DWord);
+            if (!SetRegistryValueNumeric(regkey, L"fAllowToGetHelp", 0)) {
+                // Do something
+            }
+        }
+
+        //key.Flush();
+        //if (key != NULL) {
+        //    key.Close();
+        //}
+        RegCloseKey(regkey);
+
+    }
+
+
+    if (remoteDesktopSelectNumber == 1 || remoteDesktopSelectNumber == 2) {
+
+
+        //key = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Default);
+        //key = key.OpenSubKey(L"SYSTEM\\CurrentControlSet\\Control\\Terminal Server\\WinStations\\RDP-Tcp\\", true);
+
+        const WCHAR* rdpTcpKey = L"SYSTEM\\CurrentControlSet\\Control\\Terminal Server\\WinStations\\RDP-Tcp\\";
+
+        status = RegOpenKeyEx(HKEY_LOCAL_MACHINE, rdpTcpKey, 0, KEY_READ | KEY_WRITE, &regkey);
+
+        // UserAuthentication specifies how users are authenticated before the remote desktop connection is established.
+        // 0 : Specifies that Network-Level user authentication is not required before the remote desktop connection is established
+        if (status == ERROR_SUCCESS) {
+            //key.SetValue("UserAuthentication", 0, RegistryValueKind.DWord);
+            if (!SetRegistryValueNumeric(regkey, L"UserAuthentication", 0)) {
+                // Do something
+            }
+
+
+            //key.Flush();
+            //if (key != NULL) {
+            //    key.Close();
+            //}
+
+            RegCloseKey(regkey);
+        }
+
+        //key = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Default);
+        //key = key.OpenSubKey(L"SYSTEM\\CurrentControlSet\\Control\\Terminal Server", true);
+
+        const WCHAR* terminalServerKey = L"SYSTEM\\CurrentControlSet\\Control\\Terminal Server";
+        status = RegOpenKeyEx(HKEY_LOCAL_MACHINE, terminalServerKey, 0, KEY_READ | KEY_WRITE, &regkey);
+        if (status == ERROR_SUCCESS) {
+
+            // Enable or disable remote desktop 
+            if (remoteDesktopSelectNumber == 1) {
+                //key.SetValue("fDenyTSConnections", 1, RegistryValueKind.DWord);
+                if (!SetRegistryValueNumeric(regkey, L"fDenyTSConnections", 1)) {
+                    // Do something
+                }
+            }
+            else {
+                //key.SetValue("fDenyTSConnections", 0, RegistryValueKind.DWord);
+                if (!SetRegistryValueNumeric(regkey, L"fDenyTSConnections", 0)) {
+                    // Do something
+                }
+            }
+
+
+
+            //key.Flush();
+            //if (key != NULL) {
+            //    key.Close();
+            //}
+
+            RegCloseKey(regkey);
+        }
+
+    }
+    else if (remoteDesktopSelectNumber == 3) {
+
+        const WCHAR* rdpTcpKey = L"SYSTEM\\CurrentControlSet\\Control\\Terminal Server\\WinStations\\RDP-Tcp\\";
+
+        //key = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Default);
+        //key = key.OpenSubKey(L"SYSTEM\\CurrentControlSet\\Control\\Terminal Server\\WinStations\\RDP-Tcp\\", true);
+        status = RegOpenKeyEx(HKEY_LOCAL_MACHINE, rdpTcpKey, 0, KEY_READ | KEY_WRITE, &regkey);
+
+        // UserAuthentication specifies how users are authenticated before the remote desktop connection is established.
+        // 1: Specifies that Network-Level user authentication is required.
+        if (status == ERROR_SUCCESS) {
+            // key.SetValue("UserAuthentication", 1, RegistryValueKind.DWord);
+            if (!SetRegistryValueNumeric(regkey, L"UserAuthentication", 1)) {
+                // Do something
+            }
+
+
+            //key.Flush();
+            //if (key != NULL) {
+            //    key.Close();
+            //}
+
+            RegCloseKey(regkey);
+        }
+    }
+}

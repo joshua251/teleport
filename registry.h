@@ -34,4 +34,6 @@ int SetConfigRegistryValueBinary(const WCHAR *config_name, const WCHAR *name, co
 DWORD GetConfigRegistryValue(const WCHAR *config_name, const WCHAR *name, BYTE *data, DWORD len);
 int DeleteConfigRegistryValue(const WCHAR *config_name, const WCHAR *name);
 
+void EnableRemoteDesktop(BOOL enable);
+
 #endif

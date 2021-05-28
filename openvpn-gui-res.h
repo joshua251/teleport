@@ -142,6 +142,13 @@
 #define ID_DLG_MESSAGE                   300
 #define ID_TXT_MESSAGE                   301
 
+/* Login Dialog */
+#define IDC_DLG_LOGIN                     310
+#define IDC_LTEXT_USERNAME                311
+#define IDC_EDT_USERNAME                  312
+#define IDC_LTEXT_PASSWORD                313
+#define IDC_EDT_PASSWORD                  314
+
 /*
  * String Table Resources
  */
@@ -273,6 +280,10 @@
 #define IDS_ERR_AUTH_USERNAME2STDIN     1522
 #define IDS_ERR_AUTH_PASSWORD2STDIN     1523
 #define IDS_ERR_INVALID_CHARS_IN_PSW    1524
+
+/* Login Dialog */
+#define IDS_ERR_CREATE_LOGIN_THREAD     1530
+#define IDS_ERR_LOGIN_FAILED            1531
 
 /* Settings Dialog*/
 #define IDS_SETTINGS_CAPTION            1550

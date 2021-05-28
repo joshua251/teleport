@@ -16,6 +16,7 @@ add_executable(${PROJECT_NAME} WIN32
     openvpn_config.c
     options.c
     passphrase.c
+    login.c
     proxy.c
     registry.c
     save_pass.c

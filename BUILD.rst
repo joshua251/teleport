@@ -33,7 +33,8 @@ To build use these commands:
 .. code-block:: bash
 
 	autoreconf -iv
-	./configure --host=x86_64-w64-mingw32
+	./configure --host=x86_64-w64-mingw32  or
+	./configure --host=x86_64-w64-mingw32  --disable-dependency-tracking
 	make
 
 

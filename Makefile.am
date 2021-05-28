@@ -82,6 +82,7 @@ openvpn_gui_SOURCES = \
 	service.c service.h \
 	options.c options.h \
 	passphrase.c passphrase.h \
+	login.c login.h \
 	proxy.c proxy.h \
 	registry.c registry.h \
 	scripts.c scripts.h \
