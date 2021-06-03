@@ -97,7 +97,8 @@ openvpn_gui_SOURCES = \
 	echo.c echo.h \
 	openvpn-gui-res.h
 
-openvpn_gui_LDFLAGS = -mwindows
+openvpn_gui_LDFLAGS = -mwindows -L./
+
 openvpn_gui_LDADD = \
 	openvpn-gui-res.o \
 	$(OPENSSL_CRYPTO_LIBS) \
@@ -109,7 +110,9 @@ openvpn_gui_LDADD = \
 	-lnetapi32 \
 	-lole32 \
 	-lshlwapi \
-	-lsecur32
+	-lsecur32 \
+        -lcurl
+          
 
 openvpn-gui-res.o: $(openvpn_gui_RESOURCES) $(srcdir)/openvpn-gui-res.h
 	$(RCCOMPILE) -i $< -o $@
