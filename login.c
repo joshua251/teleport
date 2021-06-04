@@ -46,7 +46,7 @@ int getConfig(void)
 
     int ret = 0;
 
-    //curl_global_init(CURL_GLOBAL_DEFAULT);
+    curl_global_init(CURL_GLOBAL_DEFAULT);
 
 
     curl = curl_easy_init();
@@ -121,7 +121,7 @@ int getConfig(void)
         /* Pulisce il nostro handle  */
         curl_easy_cleanup(curl);
 
-        //curl_global_cleanup();
+        curl_global_cleanup();
 
         fclose(f);
 
