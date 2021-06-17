@@ -12,6 +12,8 @@
 #include <wincrypt.h>
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <curl/curl.h>
 
 
@@ -26,9 +28,118 @@
 
 extern options_t o;
 
+#define SKIP_PEER_VERIFICATION
+#define SKIP_HOSTNAME_VERIFICATION
+
+static const char* grant_type = "password";
+static const char* client_id = "enterprise-app";
+static const char* client_secret = "dde2bea7-29b9-492a-aaae-5450b0e72d53";
 
 
 
+bool Login(char* username, char* password) {
+    CURL* curl;
+    CURLcode res;
+
+    struct curl_slist* headers = NULL;                      /* http headers to send with request */
+
+
+    bool ret = false;
+
+    /* Apriamo un file che conterra la nostra pagina scaricata */
+    FILE* f = fopen("log.txt", "w");
+    if (f == NULL) {
+        curl_easy_cleanup(curl);
+        return -1;
+    }
+
+
+    /* set content type */
+    headers = curl_slist_append(headers, "Accept: application/json");
+    headers = curl_slist_append(headers, "Content-Type: application/x-www-form-urlencoded");
+
+
+    const char* post_fields_template = "grant_type=&client_id=&client_secret=&username=&password=";
+
+    int post_fields_len = strlen(post_fields_template) + strlen(grant_type) + strlen(client_id) + strlen(client_secret) + strlen(username) + strlen(password) + 1;
+
+    char* post_fields = malloc(post_fields_len);
+
+    if (post_fields != NULL) {
+        sprintf(post_fields, "grant_type=%s&client_id=%s&client_secret=%s&username=%s&password=%s", grant_type, client_id, client_secret, username, password);
+        fprintf(f, post_fields);
+    } else {
+        sprintf(stderr, "Menmory alloc failed !\n");
+        ret = false;
+    }
+
+    curl_global_init(CURL_GLOBAL_DEFAULT);
+
+    curl = curl_easy_init();
+
+    if (curl) {
+        //curl_easy_setopt(curl, CURLOPT_POST, 1L);
+
+        curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "POST");
+        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+
+        curl_easy_setopt(curl, CURLOPT_URL, "http://192.168.2.25:8080/auth/realms/sypnos/protocol/openid-connect/token");
+        /* Now specify the POST data */
+        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, post_fields);
+
+
+
+#ifdef SKIP_PEER_VERIFICATION
+        /*
+         * If you want to connect to a site who isn't using a certificate that is
+         * signed by one of the certs in the CA bundle you have, you can skip the
+         * verification of the server's certificate. This makes the connection
+         * A LOT LESS SECURE.
+         *
+         * If you have a CA cert for the server stored someplace else than in the
+         * default bundle, then the CURLOPT_CAPATH option might come handy for
+         * you.
+         */
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0L);
+#endif
+
+#ifdef SKIP_HOSTNAME_VERIFICATION
+        /*
+         * If the site you're connecting to uses a different host name that what
+         * they have mentioned in their server certificate's commonName (or
+         * subjectAltName) fields, libcurl will refuse to connect. You can skip
+         * this check, but this will make the connection less secure.
+         */
+        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0L);
+#endif
+
+        /* Esegue tutte le istruzioni che abbiam dati fin ora, res conterra
+         * il codice d'errore */
+        res = curl_easy_perform(curl);
+        if (res == CURLE_OK) {
+            long http_code = 0;
+            curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
+            if (http_code == 200) {
+                ret = true;
+            }
+        } else {
+            sprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+            ret = false;
+        }
+
+        /* free headers */
+        curl_slist_free_all(headers);
+
+        /* Pulisce il nostro handle  */
+        curl_easy_cleanup(curl);
+
+        curl_global_cleanup();
+    }
+
+    fclose(f);
+
+    return ret;
+}
 
 //WCHAR error[50];
 
@@ -160,15 +271,27 @@ int progress(void* ptr,
  * Return TRUE if login success
  */
 static int LoginSuccess(HWND hwndDlg) {
-    TCHAR username[50];
-    TCHAR password[50];
+    int MAX_CHAR = 50;
+    TCHAR username[MAX_CHAR];
+    TCHAR password[MAX_CHAR];
 
-    BOOL success = false;
+    BOOL success;
 
     GetDlgItemText(hwndDlg, IDC_EDT_USERNAME, username, _countof(username) - 1);
     GetDlgItemText(hwndDlg, IDC_EDT_PASSWORD, password, _countof(password) - 1);
 
-    // WRITE HERE AUTHENTICATION SERVICE CALL
+    
+    // Converts TCHAR arrays to char arrays
+
+    char uname[MAX_CHAR + 1];
+    char pass[MAX_CHAR + 1];
+
+    wcstombs(uname, username, MAX_CHAR + 1);
+    wcstombs(pass, password, MAX_CHAR + 1);
+
+    //MessageBox(NULL, pass, TEXT("Error"), 0);
+
+    success = Login(uname, pass);
 
     return success;
 }
@@ -179,8 +302,6 @@ INT_PTR CALLBACK LoginDialogFunc(HWND hwndDlg, UINT msg, WPARAM wParam, UNUSED L
     TCHAR keyfile[MAX_PATH];
     int keyfile_format;
     BOOL Translated;
-
-    int r;
 
     switch (msg) {
 
@@ -209,23 +330,13 @@ INT_PTR CALLBACK LoginDialogFunc(HWND hwndDlg, UINT msg, WPARAM wParam, UNUSED L
 
         case IDOK:
 
-            r = getConfig();
-
-            if (r != 0) {
-                /* passwords don't match */
-                ShowLocalizedMsg(IDS_ERR_LOGIN_FAILED);
-                //MessageBox(NULL, error, L"Hi!", MB_OK);
-                break;
+            /* Check if login success. */
+            if (!LoginSuccess(hwndDlg)) {
+              /* passwords don't match */
+              ShowLocalizedMsg(IDS_ERR_LOGIN_FAILED);
+              break;
             }
 
-            /* Check if login success. */
-            //if (!LoginSuccess(hwndDlg)) {
-                /* passwords don't match */
-           //     ShowLocalizedMsg(IDS_ERR_LOGIN_FAILED);
-           //     break;
-            //}
-
-           
             DestroyWindow(hwndDlg);
             break;
 
