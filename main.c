@@ -518,10 +518,12 @@ LRESULT CALLBACK WindowProcedure (HWND hwnd, UINT message, WPARAM wParam, LPARAM
 #endif
 
       echo_msg_init();
+      
+      ShowLoginDialog(&o.conn[conn_id]);
 
       CreatePopupMenus();	/* Create popup menus */
       ShowTrayIcon();
-      ShowLoginDialog(&o.conn[conn_id]);
+      //ShowLoginDialog(&o.conn[conn_id]);
       if (o.service_only)
         CheckServiceStatus();	// Check if service is running or not
       if (!AutoStartConnections()) {

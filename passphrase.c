@@ -111,34 +111,6 @@ NewPasswordLengh(HWND hwndDlg)
 }
 
 
-static int
-ConvertUnicode2Ascii(WCHAR str_unicode[], char str_ascii[], unsigned int str_ascii_size)
-{
-  unsigned int i;
-  unsigned int j;
-  int illegal_chars = false;
-  for (i=0; (i < wcslen(str_unicode)) && (i < (str_ascii_size - 1)); i++)
-    {
-      for (j=0; j <= 256; j++)
-        {
-          if (j == 256)
-            {
-              illegal_chars = true;
-              j = 0x2e;
-              break;
-            }
-          if (str_unicode[i] == unicode_to_ascii[j]) break;
-        }
-      str_ascii[i] = (char) j;
-   }
-  str_ascii[i] = '\0';
-
-  if (illegal_chars)
-    return(false);
-  else
-    return(true);
-}
-
 
 /*
  * ChangePasswordPEM() returns:

@@ -91,7 +91,7 @@ openvpn_gui_SOURCES = \
 	openvpn_config.c \
 	openvpn_config.h \
 	access.c access.h \
-	chartable.h \
+	chartable.c chartable.h \
 	save_pass.c save_pass.h \
 	env_set.c env_set.h \
 	echo.c echo.h \

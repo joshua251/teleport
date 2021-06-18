@@ -3,7 +3,8 @@
 
 #include "options.h"
 
-bool Login(char*, char*);
+bool Login(char* username, char* password);
+
 void ShowLoginDialog(connection_t *);
 
 #endif

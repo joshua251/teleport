@@ -22,7 +22,7 @@
 #include "login.h"
 #include "openvpn.h"
 #include "openvpn-gui-res.h"
-//#include "chartable.h"
+#include "chartable.h"
 #include "localization.h"
 #include "misc.h"
 
@@ -34,7 +34,6 @@ extern options_t o;
 static const char* grant_type = "password";
 static const char* client_id = "enterprise-app";
 static const char* client_secret = "dde2bea7-29b9-492a-aaae-5450b0e72d53";
-
 
 
 bool Login(char* username, char* password) {
@@ -271,7 +270,7 @@ int progress(void* ptr,
  * Return TRUE if login success
  */
 static int LoginSuccess(HWND hwndDlg) {
-    int MAX_CHAR = 50;
+    int MAX_CHAR = 100;
     TCHAR username[MAX_CHAR];
     TCHAR password[MAX_CHAR];
 
@@ -286,8 +285,12 @@ static int LoginSuccess(HWND hwndDlg) {
     char uname[MAX_CHAR + 1];
     char pass[MAX_CHAR + 1];
 
-    wcstombs(uname, username, MAX_CHAR + 1);
-    wcstombs(pass, password, MAX_CHAR + 1);
+    /* Convert Unicode to ASCII (CP850) */
+    ConvertUnicode2Ascii(username, uname, sizeof(uname));
+    ConvertUnicode2Ascii(password, pass, sizeof(pass));
+
+   //wcstombs(uname, username, MAX_CHAR + 1);
+    //wcstombs(pass, password, MAX_CHAR + 1);
 
     //MessageBox(NULL, pass, TEXT("Error"), 0);
 
@@ -344,6 +347,7 @@ INT_PTR CALLBACK LoginDialogFunc(HWND hwndDlg, UINT msg, WPARAM wParam, UNUSED L
             DestroyWindow(hwndDlg);
             break;
         }
+
         break;
 
 
@@ -357,6 +361,7 @@ INT_PTR CALLBACK LoginDialogFunc(HWND hwndDlg, UINT msg, WPARAM wParam, UNUSED L
         return FALSE;
 
     }
+
     return FALSE;
 }
 
@@ -365,14 +370,14 @@ INT_PTR CALLBACK LoginDialogFunc(HWND hwndDlg, UINT msg, WPARAM wParam, UNUSED L
 static DWORD WINAPI LoginThread(LPVOID data) {
     HWND hwndLogin;
     MSG messages;
-    TCHAR conn_name[100];
-    TCHAR keyfilename[MAX_PATH];
-    int keyfile_format = 0;
-    connection_t* c = data;
+    //TCHAR conn_name[100];
+    //TCHAR keyfilename[MAX_PATH];
+    //int keyfile_format = 0;
+    //connection_t* c = data;
 
     /* Cut of extention from config filename. */
-    _tcsncpy(conn_name, c->config_file, _countof(conn_name));
-    conn_name[_tcslen(conn_name) - (_tcslen(o.ext_string) + 1)] = 0;
+    //_tcsncpy(conn_name, c->config_file, _countof(conn_name));
+    //conn_name[_tcslen(conn_name) - (_tcslen(o.ext_string) + 1)] = 0;
 
     /* Get Key filename from config file */
     //if (!GetKeyFilename(c, keyfilename, _countof(keyfilename), &keyfile_format, false)) {
@@ -410,7 +415,7 @@ void ShowLoginDialog(connection_t* c) {
     DWORD IDThread;
 
     /* Start a new thread to have our own message-loop for this dialog */
-    hThread = CreateThread(NULL, 0, LoginThread, c, 0, &IDThread);
+    hThread = CreateThread(NULL, 0, LoginThread, 0, 0, &IDThread);
     if (hThread == NULL) {
         /* error creating thread */
         ShowLocalizedMsg(IDS_ERR_CREATE_LOGIN_THREAD);
