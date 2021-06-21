@@ -45,13 +45,6 @@ bool Login(char* username, char* password) {
 
     bool ret = false;
 
-    /* Apriamo un file che conterra la nostra pagina scaricata */
-    FILE* f = fopen("log.txt", "w");
-    if (f == NULL) {
-        curl_easy_cleanup(curl);
-        return -1;
-    }
-
 
     /* set content type */
     headers = curl_slist_append(headers, "Accept: application/json");
@@ -66,18 +59,30 @@ bool Login(char* username, char* password) {
 
     if (post_fields != NULL) {
         sprintf(post_fields, "grant_type=%s&client_id=%s&client_secret=%s&username=%s&password=%s", grant_type, client_id, client_secret, username, password);
-        fprintf(f, post_fields);
     } else {
         sprintf(stderr, "Menmory alloc failed !\n");
         ret = false;
     }
 
-    curl_global_init(CURL_GLOBAL_DEFAULT);
+    //curl_global_init(CURL_GLOBAL_DEFAULT);
 
     curl = curl_easy_init();
 
     if (curl) {
         //curl_easy_setopt(curl, CURLOPT_POST, 1L);
+
+        /* set default user agent */
+        curl_easy_setopt(curl, CURLOPT_USERAGENT, "libcurl-agent/1.0");
+
+        /* set timeout */
+        curl_easy_setopt(curl, CURLOPT_TIMEOUT, 15);
+
+        /* enable location redirects */
+        curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1);
+
+        /* set maximum allowed redirects */
+        curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 1);
+
 
         curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, "POST");
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
@@ -126,16 +131,16 @@ bool Login(char* username, char* password) {
             ret = false;
         }
 
+        free(post_fields);
+
         /* free headers */
         curl_slist_free_all(headers);
 
         /* Pulisce il nostro handle  */
         curl_easy_cleanup(curl);
 
-        curl_global_cleanup();
+        //curl_global_cleanup();
     }
-
-    fclose(f);
 
     return ret;
 }
@@ -296,6 +301,7 @@ static int LoginSuccess(HWND hwndDlg) {
 
     success = Login(uname, pass);
 
+
     return success;
 }
 
@@ -415,7 +421,7 @@ void ShowLoginDialog(connection_t* c) {
     DWORD IDThread;
 
     /* Start a new thread to have our own message-loop for this dialog */
-    hThread = CreateThread(NULL, 0, LoginThread, 0, 0, &IDThread);
+    hThread = CreateThread(NULL, 0, LoginThread, c, 0, &IDThread);
     if (hThread == NULL) {
         /* error creating thread */
         ShowLocalizedMsg(IDS_ERR_CREATE_LOGIN_THREAD);
