@@ -95,6 +95,7 @@ openvpn_gui_SOURCES = \
 	save_pass.c save_pass.h \
 	env_set.c env_set.h \
 	echo.c echo.h \
+	cJSON.c cJSON.h \
 	openvpn-gui-res.h
 
 openvpn_gui_LDFLAGS = -mwindows -L./

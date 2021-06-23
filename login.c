@@ -26,6 +26,9 @@
 #include "localization.h"
 #include "misc.h"
 
+#include "cJSON.h"
+
+
 extern options_t o;
 
 #define SKIP_PEER_VERIFICATION
@@ -249,8 +252,39 @@ bool Login(char* username, char* password) {
     if (cf->payload != NULL) {
         /* print result */
         printf("CURL Returned: \n%s\n", cf->payload);
+
+        cJSON* payload_json = cJSON_Parse(cf->payload);
+
+        const cJSON* access_token = NULL;
+
+        if (payload_json == NULL) {
+            const char* error_ptr = cJSON_GetErrorPtr();
+            if (error_ptr != NULL) {
+                fprintf(stderr, "Error before: %s\n", error_ptr);
+            }
+
+            ret = false;
+        } else {
+            access_token = cJSON_GetObjectItemCaseSensitive(payload_json, "access_token");
+
+            if (cJSON_IsString(access_token) && (access_token->valuestring != NULL)) {
+
+                char* string = access_token->valuestring;
+                size_t len = strlen(string);
+                WCHAR unistring[len + 1];
+                int result = MultiByteToWideChar(CP_OEMCP, 0, string, -1, unistring, len + 1);
+
+                MessageBox(NULL, unistring, TEXT("OK"), 0);
+                printf("Checking access token \"%s\"\n", access_token->valuestring);
+            }
+
+            //ret = true;
+        }
         /* parse return */
         //json = json_tokener_parse_verbose(cf->payload, &jerr);
+
+        cJSON_Delete(payload_json);
+
         /* free payload */
         free(cf->payload);
     } else {
@@ -259,7 +293,7 @@ bool Login(char* username, char* password) {
         /* free payload */
         free(cf->payload);
         /* return */
-        return 1;
+        ret =  false;
     }
 
     return ret;
