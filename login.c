@@ -37,6 +37,7 @@ extern options_t o;
 static const char* grant_type = "password";
 static const char* client_id = "enterprise-app";
 static const char* client_secret = "dde2bea7-29b9-492a-aaae-5450b0e72d53";
+static const char* auth_server_url = "http://192.168.2.25:8080/auth/realms/sypnos/protocol/openid-connect/token";
 
 
 /* holder for curl fetch */
@@ -44,6 +45,11 @@ struct curl_fetch_st {
     char* payload;
     size_t size;
 };
+
+static struct curl_fetch_st curl_fetch;                        /* curl fetch struct */
+static struct curl_fetch_st* cf = &curl_fetch;                 /* pointer to fetch struct */
+
+
 
 /* callback for curl fetch */
 size_t curl_callback(void* contents, size_t size, size_t nmemb, void* userp) {
@@ -124,9 +130,61 @@ CURLcode curl_fetch_url(CURL* ch, const char* url, struct curl_fetch_st* fetch) 
     /* return */
     return rcode;
 }
+const char* get_token() {
+
+    const char* token = NULL;
+
+    /* check payload */
+    if (cf->payload != NULL) {
+        /* print result */
+        // printf("CURL Returned: \n%s\n", cf->payload);
+
+        cJSON* payload_json = cJSON_Parse(cf->payload);
+
+        const cJSON* access_token = NULL;
+
+        if (payload_json == NULL) {
+            const char* error_ptr = cJSON_GetErrorPtr();
+            if (error_ptr != NULL) {
+                fprintf(stderr, "Error before: %s\n", error_ptr);
+            }
+
+        } else {
+
+            access_token = cJSON_GetObjectItemCaseSensitive(payload_json, "access_token");
+
+            if (cJSON_IsString(access_token) && (access_token->valuestring != NULL)) {
+
+                size_t token_len = strlen(access_token->valuestring) + 1;
+
+                token = malloc(sizeof(char) + token_len);
+
+                strcpy(token, access_token->valuestring);
+              
+
+            }
+           
+        }
+        /* parse return */
+        //json = json_tokener_parse_verbose(cf->payload, &jerr);
+
+        cJSON_Delete(payload_json);
+
+    } else {
+        /* error */
+        fprintf(stderr, "ERROR: Failed to populate payload");
+
+    }
+
+    /* free payload */
+    free(cf->payload);
+
+    return token;
+
+}
 
 
-bool Login(char* username, char* password) {
+bool login(char* username, char* password) {
     CURL* curl;
     CURLcode res;
 
@@ -134,10 +192,7 @@ bool Login(char* username, char* password) {
 
     bool ret = false;
 
-    struct curl_fetch_st curl_fetch;                        /* curl fetch struct */
-    struct curl_fetch_st* cf = &curl_fetch;                 /* pointer to fetch struct */
-
-
+   
     /* set content type */
     headers = curl_slist_append(headers, "Accept: application/json");
     headers = curl_slist_append(headers, "Content-Type: application/x-www-form-urlencoded");
@@ -180,7 +235,7 @@ bool Login(char* username, char* password) {
 
         /* set url to fetch */
         //curl_easy_setopt(curl, CURLOPT_URL, "http://192.168.2.25:8080/auth/realms/sypnos/protocol/openid-connect/token");
-        char* url = "http://192.168.2.25:8080/auth/realms/sypnos/protocol/openid-connect/token";
+        //char* url = "http://192.168.2.25:8080/auth/realms/sypnos/protocol/openid-connect/token";
 
         /* Now specify the POST data */
         curl_easy_setopt(curl, CURLOPT_POSTFIELDS, post_fields);
@@ -212,7 +267,7 @@ bool Login(char* username, char* password) {
 #endif
 
         /* fetch page and capture return code */
-        res = curl_fetch_url(curl, url, cf);
+        res = curl_fetch_url(curl, auth_server_url, cf);
 
         /* Esegue tutte le istruzioni che abbiam dati fin ora, res conterra
          * il codice d'errore */
@@ -224,10 +279,26 @@ bool Login(char* username, char* password) {
             long http_code = 0;
             curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
             if (http_code == 200) {
-                ret = true;
+                
+                const char* token = get_token(token);
+
+                if (token != NULL) {
+                    size_t token_len = strlen(token);
+                   
+
+                    if (token_len > 0) {
+                       WCHAR w_token[token_len + 1];
+                       int result = MultiByteToWideChar(CP_OEMCP, 0, token, -1, w_token, token_len + 1);
+                       MessageBox(NULL, w_token, TEXT("OK"), 0);
+                    }
+
+                    free(token);
+                    ret = true;
+                }
+               
             }
         } else {
-            sprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+            sprintf(stderr, "curl_fetch_url() failed: %s\n", curl_easy_strerror(res));
             ret = false;
         }
 
@@ -247,57 +318,10 @@ bool Login(char* username, char* password) {
 
     //curl_global_cleanup();
 
-
-     /* check payload */
-    if (cf->payload != NULL) {
-        /* print result */
-        printf("CURL Returned: \n%s\n", cf->payload);
-
-        cJSON* payload_json = cJSON_Parse(cf->payload);
-
-        const cJSON* access_token = NULL;
-
-        if (payload_json == NULL) {
-            const char* error_ptr = cJSON_GetErrorPtr();
-            if (error_ptr != NULL) {
-                fprintf(stderr, "Error before: %s\n", error_ptr);
-            }
-
-            ret = false;
-        } else {
-            access_token = cJSON_GetObjectItemCaseSensitive(payload_json, "access_token");
-
-            if (cJSON_IsString(access_token) && (access_token->valuestring != NULL)) {
-
-                char* string = access_token->valuestring;
-                size_t len = strlen(string);
-                WCHAR unistring[len + 1];
-                int result = MultiByteToWideChar(CP_OEMCP, 0, string, -1, unistring, len + 1);
-
-                MessageBox(NULL, unistring, TEXT("OK"), 0);
-                printf("Checking access token \"%s\"\n", access_token->valuestring);
-            }
-
-            //ret = true;
-        }
-        /* parse return */
-        //json = json_tokener_parse_verbose(cf->payload, &jerr);
-
-        cJSON_Delete(payload_json);
-
-        /* free payload */
-        free(cf->payload);
-    } else {
-        /* error */
-        fprintf(stderr, "ERROR: Failed to populate payload");
-        /* free payload */
-        free(cf->payload);
-        /* return */
-        ret =  false;
-    }
-
     return ret;
 }
+
+
 
 //WCHAR error[50];
 
@@ -453,7 +477,7 @@ static int LoginSuccess(HWND hwndDlg) {
 
     //MessageBox(NULL, pass, TEXT("Error"), 0);
 
-    success = Login(uname, pass);
+    success = login(uname, pass);
 
 
     return success;
